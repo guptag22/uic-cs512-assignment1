@@ -1,0 +1,97 @@
+\documentclass[11pt]{report}
+\usepackage{./assignment_programming}
+\usepackage{slashbox}
+\usepackage{enumerate}
+\usepackage[shortlabels]{enumitem}
+\usepackage{stmaryrd}
+\usepackage{graphicx}
+\usepackage[final]{pdfpages}
+\usepackage{array}
+\usepackage{multirow}
+
+
+\input{./Definitions.tex}
+
+
+\lecturenumber{1}       % assignment number
+\duedate{12 noon, Feb 27, 2020}
+
+% Fill in your name and email address
+\stuinfo{}{}
+
+
+\begin{document}
+
+\maketitle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conditional Random Fields}
+The Conditional Random Field (CRF) model for a word/label pair $(X, \yvec)$ can be written as
+\begin{align}
+	\label{eq:crf}
+	p(\yvec | X ) &= \frac{1}{Z_X} \exp \rbr{\sum_{s=1}^m \inner{\wvec_{y_s}}{\xvec_s} + \sum_{s=1}^{m-1} T_{y_s, y_{s+1}}} \\
+	\where Z_X &= \sum_{\hat{\yvec} \in \Ycal^m} \exp \rbr{\sum_{s=1}^m \inner{\wvec_{\yhat_s}}{\xvec_s} + \sum_{s=1}^{m-1} T_{\yhat_s, \yhat_{s+1}}}.
+\end{align}
+
+\begin{itemize}
+	\item[(1a)] {\bf [5 Marks]} Show that $\grad_{\wvec_y} \log p(\yvec|X)$---the gradient of $\log p(\yvec|X)$ with respect to $\wvec_y$---can be written as:
+	\begin{align}
+		\grad_{\wvec_y} \log p(\yvec^t|X^t) &= \sum_{s=1}^m (\sembrack{y^t_s = y} - p(y_s = y | X^t)) \xvec^t_s,
+	\end{align}
+	where $\llbracket \cdot \rrbracket = 1$ if $\cdot$ is true, and 0 otherwise.
+	Show your derivation step by step.
+	
+	Now derive the similar expression for $\grad_{T_{ij}} \log p(\yvec|X)$.
+	
+	{\bf [Answer:]} 
+	(i) $\grad_{\wvec_y} \log p(\yvec^t|X^t)$
+	\begin{align}
+		\grad_{\wvec_y} \log p(\yvec^t|X^t) &= \grad_{\wvec_y} \rbr{-logZ_{X^t} + \sum_{s=1}^m \inner{\wvec_{{y_s}^t}}{\xvec_s^t} + \sum_{s=1}^{m-1} T_{{y_s}^t, {y_{s+1}}^t}} \\ 
+		&=\grad_{\wvec_y} \rbr{-logZ_{X^t} + \sum_{s=1}^m \inner{\wvec_{{y_s}^t}}{\xvec_s^t}}
+	\end{align}
+
+	First, we take gradient of the second term: 
+	\begin{align}
+		\grad_{\wvec_y} \sum_{s=1}^m \inner{\wvec_{{y_s}^t}}{\xvec_s^t} &= \sum_{s=1}^m \grad_{\wvec_y} (\wvec_{y_s^t}^T {{\xvec_s}^t}) \\
+		&= \sum_{s=1}^m \sembrack{y^t_s = y} \xvec^t_s
+	\end{align}
+
+	Now, we take the gradient of the first term: 
+	\begin{align}
+		-\grad_{\wvec_y} logZ_{X^t} &= -\frac{1}{Z_{X^t}} \sum_{\yvec \in \Ycal^m}\exp \rbr{\sum_{s=1}^m \inner{\wvec_{y_s}}{\xvec_s^t} + \sum_{s=1}^{m-1} T_{y_s, y_{s+1}}} \grad_{\wvec_y} \sum_{s=1}^m \inner{\wvec_{y_s}}{\xvec_s^t} \\
+		&= -\sum_{\yvec \in \Ycal^m}P(y|X^t) \sum_{s=1}^m \sembrack{y^t_s = y} \xvec^t_s \\
+		&= -\sum_{s=1}^m P(y_s = y|X^t)\xvec^t_s
+	\end{align}
+
+	Therefore, we get: 
+	\begin{align}
+		\grad_{\wvec_y} \log p(\yvec^t|X^t) &= \sum_{s=1}^m (\sembrack{y^t_s = y} - p(y_s = y | X^t)) \xvec^t_s
+	\end{align}
+
+	(ii) $\grad_{T_{ij}} \log p(\yvec^t|X^t)$
+	\begin{align}
+		\grad_{T_{ij}} \log p(\yvec^t|X^t) &= \grad_{T_{ij}} \rbr{-logZ_{X^t} + \sum_{s=1}^m \inner{\wvec_{{y_s}^t}}{\xvec_s^t} + \sum_{s=1}^{m-1} T_{{y_s}^t, {y_{s+1}}^t}} \\ 
+		&=\grad_{T_{ij}} \rbr{-logZ_{X^t} + \sum_{s=1}^m T_{{y_s}^t, {y_{s+1}}^t}}
+	\end{align}
+
+ 	First, we take gradient of the second term: 
+	\begin{align}
+		\grad_{T_{ij}} \sum_{s=1}^{m-1} T_{{y_s}^t, {y_{s+1}}^t} &= \sum_{s=1}^{m-1} \grad_{T_{ij}} T_{{y_s}^t, {y_{s+1}}^t} \\
+		&= \sum_{s=1}^{m-1} \sembrack{{y^t_s} = i, y^t_{s+1} = j}
+	\end{align}
+
+ 	Now, we take the gradient of the first term: 
+	\begin{align}
+		-\grad_{T_{ij}} logZ_{X^t} &= -\frac{1}{Z_{X^t}} \sum_{\yvec \in \Ycal^m}\exp \rbr{\sum_{s=1}^m \inner{\wvec_{y_s}}{\xvec_s^t} + \sum_{s=1}^{m-1} T_{y_s, y_{s+1}}} \grad_{T_{ij}} \sum_{s=1}^{m-1} T_{{y_s}^t, {y_{s+1}}^t} \\
+		&= -\sum_{\yvec \in \Ycal^m}P(y|X^t) \sum_{s=1}^{m-1} \sembrack{y^t_s = i, y^t_{s+1} = j} \\
+		&= -\sum_{s=1}^{m-1} P(y_s = i, y_{s+1} = j|X^t)
+	\end{align}
+
+	Therefore, we get: 
+	\begin{align}
+		\grad_{T_{ij}} \log p(\yvec^t|X^t) &= \sembrack{y^t_s = i, y^t_{s+1} = j} - \sum_{s=1}^{m-1} P(y_s = i, y_{s+1} = j|X^t)
+	\end{align}
+	Note that in the above notations, $y^t_s$ are known labels that are given, while $y_s$ is random variable. 
+\end{itemize}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+\end{document}
