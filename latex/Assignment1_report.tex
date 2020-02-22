@@ -33,6 +33,24 @@ The Conditional Random Field (CRF) model for a word/label pair $(X, \yvec)$ can 
 	\where Z_X &= \sum_{\hat{\yvec} \in \Ycal^m} \exp \rbr{\sum_{s=1}^m \inner{\wvec_{\yhat_s}}{\xvec_s} + \sum_{s=1}^{m-1} T_{\yhat_s, \yhat_{s+1}}}.
 \end{align}
 
+$\inner{\cdot}{\cdot}$ denotes inner product between vectors.
+Two groups of parameters are used here:
+
+\vspace{-1em}
+\begin{itemize}
+	\item {\bf Node weight:} Letter-wise discriminant weight vector $\wvec_k \in \RR^{128}$ for each possible letter label $k \in \Ycal$;
+	\item {\bf Edge weight:} Transition weight matrix $T$ which is sized $26$-by-$26$.
+	$T_{ij}$ is the weight associated with the letter pair of the $i$-th and $j$-th letter in the alphabet.  For example $T_{1,9}$ is the weight for pair (`a', `i'), and $T_{24,2}$ is for the pair (`x', `b'). In general $T$ is not symmetric, \ie\ $T_{ij} \neq T_{ji}$, or written as $T' \neq T$ where $T'$ is the transpose of $T$.
+\end{itemize}
+
+Given these parameters (\eg\ by learning from data), the model \eqref{eq:crf} can be used to predict the sequence label (\ie\ word) for a new word image $X^* := (\xvec^*_1, \ldots, \xvec^*_m)'$ via the so-called maximum a-posteriori (MAP) inference:
+\begin{align}
+	\label{eq:crf_decode}
+	\yvec^* = \argmax_{\yvec \in \Ycal^m} p(\yvec | X^*)
+	= \argmax_{\yvec \in \Ycal^m} \cbr{ \sum_{j=1}^m \inner{\wvec_{y_j}}{\xvec^*_j} + \sum_{j=1}^{m-1} T_{y_j, y_{j+1}}}.
+\end{align}
+
+
 \begin{itemize}
 	\item[(1a)] {\bf [5 Marks]} Show that $\grad_{\wvec_y} \log p(\yvec|X)$---the gradient of $\log p(\yvec|X)$ with respect to $\wvec_y$---can be written as:
 	\begin{align}
@@ -59,8 +77,8 @@ The Conditional Random Field (CRF) model for a word/label pair $(X, \yvec)$ can 
 	Now, we take the gradient of the first term: 
 	\begin{align}
 		-\grad_{\wvec_y} logZ_{X^t} &= -\frac{1}{Z_{X^t}} \sum_{\yvec \in \Ycal^m}\exp \rbr{\sum_{s=1}^m \inner{\wvec_{y_s}}{\xvec_s^t} + \sum_{s=1}^{m-1} T_{y_s, y_{s+1}}} \grad_{\wvec_y} \sum_{s=1}^m \inner{\wvec_{y_s}}{\xvec_s^t} \\
-		&= -\sum_{\yvec \in \Ycal^m}P(y|X^t) \sum_{s=1}^m \sembrack{y^t_s = y} \xvec^t_s \\
-		&= -\sum_{s=1}^m P(y_s = y|X^t)\xvec^t_s
+		&= -\sum_{\yvec \in \Ycal^m}p(\yvec|X^t) \sum_{s=1}^m \sembrack{y_s = y} \xvec^t_s \\
+		&= -\sum_{s=1}^m p(y_s = y|X^t)\xvec^t_s
 	\end{align}
 
 	Therefore, we get: 
@@ -82,16 +100,33 @@ The Conditional Random Field (CRF) model for a word/label pair $(X, \yvec)$ can 
 
  	Now, we take the gradient of the first term: 
 	\begin{align}
-		-\grad_{T_{ij}} logZ_{X^t} &= -\frac{1}{Z_{X^t}} \sum_{\yvec \in \Ycal^m}\exp \rbr{\sum_{s=1}^m \inner{\wvec_{y_s}}{\xvec_s^t} + \sum_{s=1}^{m-1} T_{y_s, y_{s+1}}} \grad_{T_{ij}} \sum_{s=1}^{m-1} T_{{y_s}^t, {y_{s+1}}^t} \\
-		&= -\sum_{\yvec \in \Ycal^m}P(y|X^t) \sum_{s=1}^{m-1} \sembrack{y^t_s = i, y^t_{s+1} = j} \\
-		&= -\sum_{s=1}^{m-1} P(y_s = i, y_{s+1} = j|X^t)
+		-\grad_{T_{ij}} logZ_{X^t} &= -\frac{1}{Z_{X^t}} \sum_{\yvec \in \Ycal^m}\exp \rbr{\sum_{s=1}^m \inner{\wvec_{y_s}}{\xvec_s^t} + \sum_{s=1}^{m-1} T_{y_s, y_{s+1}}} \grad_{T_{ij}} \sum_{s=1}^{m-1} T_{{y_s}, {y_{s+1}}} \\
+		&= -\sum_{\yvec \in \Ycal^m}p(\yvec|X^t) \sum_{s=1}^{m-1} \sembrack{y_s = i, y_{s+1} = j} \\
+		&= -\sum_{s=1}^{m-1} p(y_s = i, y_{s+1} = j|X^t)
 	\end{align}
 
 	Therefore, we get: 
 	\begin{align}
-		\grad_{T_{ij}} \log p(\yvec^t|X^t) &= \sembrack{y^t_s = i, y^t_{s+1} = j} - \sum_{s=1}^{m-1} P(y_s = i, y_{s+1} = j|X^t)
+		\grad_{T_{ij}} \log p(\yvec^t|X^t) &= \sum_{s=1}^{m-1} (\sembrack{y^t_s = i, y^t_{s+1} = j} -  p(y_s = i, y_{s+1} = j|X^t))
 	\end{align}
 	Note that in the above notations, $y^t_s$ are known labels that are given, while $y_s$ is random variable. 
+
+	\item[(1b)] {\bf [5 Marks]} A feature is a function that depends on $X$ and $\yvec$, but not $p(X|\yvec)$. Show that the gradient of $\log Z_X$ with respect to $\wvec_y$ and $T$ is exactly the expectation of some features with respect to $p(\yvec | X)$, and what are the features? Include your derivation.
+
+	{\bf [Answer:]} 
+
+	\item[(1c)] {\bf [20 Marks]} Implement the decoder \eqref{eq:crf_decode} with computational cost $O(m|\Ycal|^2)$.
+
+	In your submission, create a folder \verb#result# and store the result of decoding (the optimal $\yvec^* \in \Ycal^{100}$ of \eqref{eq:crf_decode}) in \underline{\texttt{result/decode\_output.txt}}.
+	It should have 100 lines,
+	where the $i$-th line contains one integer in $\{1,\ldots,26\}$ representing $y^*_i$.
+	In your report, provide the maximum objective value $\sum_{j=1}^m \inner{\wvec_{y_j}}{\xvec_j} + \sum_{j=1}^{m-1} T_{y_j, y_{j+1}}$ for this test case.
+	If you are using your own dynamic programming algorithm (\ie\ not max-sum),
+	give a brief description especially the formula of recursion.
+
+	{\bf [Answer:]} 
+
+
 \end{itemize}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 \end{document}
