@@ -47,17 +47,17 @@ def get_argmax(X, W, T, l):
     # print(l.shape)
     # print(W[y_m].shape, X[m].shape)
     y_star = np.dot(W[y_m], X[m]) + l[m]
-    print('init pred:', np.argmax(y_star))
-    pred.append(np.argmax(y_star))
+    pred.append(np.argmax(y_star) + 1)
     # pred.append(np.dot(W[y_m], X[m]) + l[m][y_m])
     
     for i in range(m-1, -1, -1):
         argmax_list = list()
         for y in range(0, 26):
             dot_prod = np.dot(W[y], X[i])
-            dot_prod = dot_prod + T[y][pred[m-i-1]] + l[i]
+            dot_prod = dot_prod + T[y][pred[m-i-1]-1] + l[i]
             argmax_list.append(dot_prod)
-        pred.append(np.argmax(argmax_list))
+        pred.append(np.argmax(argmax_list) + 1)
+        # print(i, len(pred), pred[m-i-1])
     return np.array(pred)
 
 
@@ -87,4 +87,5 @@ c = np.exp(b)
 
 l = max_sum(X, W, T)
 print('l shape:', l.shape)
-print(get_argmax(X, W, T, l))
+pred = get_argmax(X, W, T, l)
+print(pred)
