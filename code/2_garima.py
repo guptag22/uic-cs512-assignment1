@@ -23,37 +23,41 @@ def get_lhood_grad(Yt,Xt,W,T) :         ## get log(p(Yt|Xt)) and gradients for o
     b = np.ones((m,26))                 ## message backwards
     
     def f(s,y) :
-        return np.dot(W[y,:],Xt[s,:])   ## np.exp(np.dot(W[y,:],X[s,:]))
+        return np.dot(W[y,:],Xt[s,:])   ## < Wy, Xts >
     def g(i,j) :
-        return T[i,j]                   ## np.exp(T[i,j])
+        return T[i,j]                   ## T[i,j]
 
-    def b_rec(s,y) :
+    def b_rec(s,y) :                    ## recursion to calculate backward messages
         if (s < m-1) :
-            res = 0
+            res = []
             for i in range(26) :
-                res += np.exp(f(s+1,i) + g(y,i) + b_rec(s+1,i))
+                res.append(f(s+1,i) + g(y,i) + b_rec(s+1,i))
+            max_value = max(res)
+            res = max_value + np.log(sum(np.exp(res - max_value)))
             b[s,y] = res
-        return np.log(b[s,y])
-    def a_rec(s,y) :
+        return b[s,y]
+    def a_rec(s,y) :                    ## recursion to calculate forward messages
         if (s > 0) :
-            res = 0
+            res = []
             for i in range(26) :
-                res += np.exp(f(s-1,i) + g(i,y) + a_rec(s-1,i))
+                res.append(f(s-1,i) + g(i,y) + a_rec(s-1,i))
+            max_value = max(res)
+            res = max_value + np.log(sum(np.exp(res - max_value)))
             a[s,y] = res
-        return np.log(a[s,y])
+        return a[s,y]
 
-    Zx = 0
+    Zx = 0                                      ## Zx sum over all yi for given training example
     for i in range(26) :
-        Zx += np.exp(f(0,i)) * b[0,i]           ## all values of b are calculated and stored 
+        Zx += np.exp(f(0,i) + b[0,i])           ## all values of b are calculated and stored 
 
     for j in range(26) :
-        a[m-1,j] = np.exp(a_rec(m-1,j))         ## all values of a are calculated and stored
+        a[m-1,j] = a_rec(m-1,j)         ## all values of a are calculated and stored
     
     ## Calculate marginals
     def marginal_ys(s,ys) :
-        return (np.exp(f(s,ys)) * a[s,ys] * b[s,ys]) / Zx
+        return (np.exp(f(s,ys) + a[s,ys] + b[s,ys])) / Zx
     def marginal_ys_ys1(s,ys,ys1) :
-        return (np.exp(f(s,ys) + f(s+1,ys1) + g(ys,ys1)) * a[s,ys] * b[s+1,ys1]) / Zx
+        return (np.exp(f(s,ys) + f(s+1,ys1) + g(ys,ys1) + a[s,ys] + b[s+1,ys1])) / Zx
 
     ## Calculate log(p(Y|X))
     log_p_Yt = f(0,Yt[0]) - np.log(Zx)
@@ -95,8 +99,8 @@ def crf_obj(model,word_list,C) :
     X = []              ## array of pixel values of all words
     y = []              ## array of labels of letters for a single word
     x = []              ## array of pixel values of letters for a single word
-    for i in range(len(train_data)) :
-        letter = (train_data[i]).split()        ## extract data corresponding to a single letter
+    for i in range(len(word_list)) :
+        letter = (word_list[i]).split()        ## extract data corresponding to a single letter
         y.append(ord(letter[1].lower())-97)     ## extract the label and convert it to integer
         x.append(np.array(list(map(int,letter[5:]))))       ## extract pixel values, convert them to integer 
                                                             ## and form a numpy array for data manipulation
@@ -139,8 +143,8 @@ def crf_test(model, word_list) :
     X = []              ## array of pixel values of all words
     y = []              ## array of labels of letters for a single word
     x = []              ## array of pixel values of letters for a single word
-    for i in range(len(train_data)) :
-        letter = (train_data[i]).split()        ## extract data corresponding to a single letter
+    for i in range(len(word_list)) :
+        letter = (word_list[i]).split()        ## extract data corresponding to a single letter
         y.append(ord(letter[1].lower())-97)     ## extract the label and convert it to integer
         x.append(np.array(list(map(int,letter[5:]))))       ## extract pixel values, convert them to integer 
                                                             ## and form a numpy array for data manipulation
@@ -154,7 +158,6 @@ def crf_test(model, word_list) :
     ## Calculate accuracy by comparing y_pred with true labels
     ##----------- TO-DO -----------##
     return accuracy
-
 
 def optimize_obj(train_data, test_data, C) :
     Wo = np.zeros((128*26+26**2,1))
