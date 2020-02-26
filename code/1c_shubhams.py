@@ -76,6 +76,7 @@ print(W.shape)
 T = loaded_arr[(100*128)+(26*128):]
 # print(T.shape)
 T = np.reshape(T, (26, 26))
+T = T.transpose()
 print(T.shape)
 
 a = np.dot(X[1], W[1])
@@ -89,3 +90,11 @@ l = max_sum(X, W, T)
 print('l shape:', l.shape)
 pred = get_argmax(X, W, T, l)
 print(pred)
+
+
+# To test the maximum objective function value:
+print(max_sum(X, W, T)[-1])
+
+
+
+

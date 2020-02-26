@@ -185,6 +185,14 @@ Given these parameters (\eg\ by learning from data), the model \eqref{eq:crf} ca
 	In your report, provide the maximum objective value $\sum_{j=1}^m \inner{\wvec_{y_j}}{\xvec_j} + \sum_{j=1}^{m-1} T_{y_j, y_{j+1}}$ for this test case.
 	If you are using your own dynamic programming algorithm (\ie\ not max-sum),
 	give a brief description especially the formula of recursion.
+
+	{\bf [Answers:]} 
+
+	The the maximum objective value $\sum_{j=1}^m \inner{\wvec_{y_j}}{\xvec_j} + \sum_{j=1}^{m-1} T_{y_j, y_{j+1}}$ is 200.19.  
+
+	See the predicted labels in \underline{\texttt{result/decode\_output.txt}}. 
+
+	The predicted labels are $\{18, 11, \ldots, 23\}$, which correspond to letters $\{r, k, \ldots, w\}$.
 \end{itemize}
 
 %\newpage
