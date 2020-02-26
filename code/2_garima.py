@@ -8,17 +8,43 @@ from numpy.linalg import norm
 train_data_PATH = "/Users/gammu/Documents/AML_assignment_1/uic-cs512-assignment1/data/train.txt"
 file = open(train_data_PATH,"r")
 train_data = (file.read()).strip()
-train_data = train_data.split('\n')
+train_data = train_data.split('\n')         ## Training data as a list of individual letters' data
 
 test_data_PATH = "/Users/gammu/Documents/AML_assignment_1/uic-cs512-assignment1/data/test.txt"
 file = open(test_data_PATH,"r")
 test_data = (file.read()).strip()
-test_data = test_data.split('\n')
+test_data = test_data.split('\n')           ## Test data as a list of individual letters' data
 
 model_PATH = "/Users/gammu/Documents/AML_assignment_1/uic-cs512-assignment1/data/model.txt"
 model = np.genfromtxt(model_PATH, delimiter = ' ')
 
-def get_lhood_grad(Yt,Xt,W,T) :         ## get log(p(Yt|Xt)) and gradients for one training example
+def extract_words(word_list) :      ## Extract all words from the list
+    ##### Extract Y and X from data ######
+    ##### shape of X should be each letter in a row of size 128
+    Y = []              ## array of all labels of all words
+    X = []              ## array of pixel values of all words
+    Yt = []             ## array of labels of letters for a single word
+    Xt = []             ## array of pixel values of letters for a single word
+    for i in range(len(word_list)) :
+        letter = (word_list[i]).split()         ## extract data corresponding to a single letter
+        Yt.append(ord(letter[1].lower())-97)    ## extract the label and convert it to integer
+        Xt.append(np.array(list(map(int,letter[5:]))))      ## extract pixel values, convert them to integer 
+                                                            ## and form a numpy array for data manipulation
+        if (int(letter[2]) == -1) :             ## Check for end of word
+            Y.append(Yt)
+            X.append(np.array(Xt))
+            Yt = []
+            Xt = []
+    return Y,X
+def extract_parameters(model) :     ## Extract W and T from the model
+    W = model[:128*26]
+    T = model[128*26:]
+    W = np.reshape(W, (26,128))                 ## W contains each Wy as a row of size 128
+    T = np.reshape(T, (26,26))
+    T = T.transpose()
+    return W,T
+
+def get_posterior_grad(Yt,Xt,W,T) :         ## get log(p(Yt|Xt)) and gradients for one training example
     m = len(Yt)                         ## number of letters in the word
 
     a = np.zeros((m,26))                ## message forward
@@ -59,7 +85,7 @@ def get_lhood_grad(Yt,Xt,W,T) :         ## get log(p(Yt|Xt)) and gradients for o
     def marginal_ys(s,ys) :
         return (np.exp(f(s,ys) + a[s,ys] + b[s,ys] - log_Zx))
     def marginal_ys_ys1(s,ys,ys1) :
-        return (np.exp(f(s,ys) + f(s+1,ys1) + g(ys,ys1) + a[s,ys] + b[s+1,ys1] - log_Zx)
+        return (np.exp(f(s,ys) + f(s+1,ys1) + g(ys,ys1) + a[s,ys] + b[s+1,ys1] - log_Zx))
 
     ## Calculate log(p(Y|X))
     log_p_Yt = (f(m-1,Yt[m-1]) - log_Zx)
@@ -88,110 +114,107 @@ def get_lhood_grad(Yt,Xt,W,T) :         ## get log(p(Yt|Xt)) and gradients for o
     return log_p_Yt, grad_Wy_t, grad_Tij_t
 
 ###################### Test code ######################
-word_list = train_data[:24]
-Y = []              ## array of all labels of all words
-X = []              ## array of pixel values of all words
-Yt = []              ## array of labels of letters for a single word
-Xt = []              ## array of pixel values of letters for a single word
-for i in range(len(word_list)) :
-    letter = (word_list[i]).split()        ## extract data corresponding to a single letter
-    Yt.append(ord(letter[1].lower())-97)     ## extract the label and convert it to integer
-    Xt.append(np.array(list(map(int,letter[5:]))))       ## extract pixel values, convert them to integer 
-                                                        ## and form a numpy array for data manipulation
-    if (int(letter[2]) == -1) :             ## Check for end of word
-        Y.append(Yt)
-        X.append(np.array(Xt))
-        Yt = []
-        Xt = []
-W = model[:128*26]
-T = model[128*26:]
-W = np.reshape(W, (26,128))                 ## W contains each Wy as a row of size 128
-T = np.reshape(T, (26,26))
-T = T.transpose()
-
-log_p_Y1, grad_Wy_1, grad_Tij_1 = get_lhood_grad(Y[-1],X[-1],W,T)
-
-print(log_p_Y1, grad_Wy_1, grad_Tij_1)
+# word_list = train_data[:24]
+# W,T = extract_parameters(model)
+# Y,X = extract_words(word_list)
+# N = len(Y)                              ## Total number of words in the training data
+# log_p_Y1, grad_Wy_1, grad_Tij_1 = get_posterior_grad(Y[-1],X[-1],W,T)
+# print(log_p_Y1, grad_Wy_1, grad_Tij_1)
 
 ######################################################
 
-# def crf_obj(model,word_list,C) : 
-#     W = model[:128*26]
-#     T = model[128*26:]
-#     W = np.reshape(W, (26,128))                 ## W contains each Wy as a row of size 128
-#     T = np.reshape(T, (26,26))
-#     T = T.transpose()
-#     N = int((word_list[-1].split())[3])         ## Total number of words in the training data
-#     ##### Extract Y and X from data ######
-#     ##### shape of X should be each letter in a row of size 128
-#     Y = []              ## array of all labels of all words
-#     X = []              ## array of pixel values of all words
-#     Yt = []             ## array of labels of letters for a single word
-#     Xt = []             ## array of pixel values of letters for a single word
-#     for i in range(len(word_list)) :
-#         letter = (word_list[i]).split()         ## extract data corresponding to a single letter
-#         Yt.append(ord(letter[1].lower())-97)    ## extract the label and convert it to integer
-#         Xt.append(np.array(list(map(int,letter[5:]))))      ## extract pixel values, convert them to integer 
-#                                                             ## and form a numpy array for data manipulation
-#         if (int(letter[2]) == -1) :             ## Check for end of word
-#             Y.append(Yt)
-#             X.append(np.array(Xt))
-#             Yt = []
-#             Xt = []
+def get_posterior_grad_forall(model,word_list) :
+    W,T = extract_parameters(model)
+    Y,X = extract_words(word_list)
+    N = len(Y)                              ## Total number of words in the training data
     
-#     ## Calculate gradient of whole training data
-#     grad_Wy = np.zeros((26,128))
-#     grad_T = np.zeros((26,26))
-#     log_liklihood = 0
-#     for t in range(N) :
-#         log_p_Yt, grad_Wy_t, grad_Tij_t = get_lhood_grad(Y[t], X[t], W, T)
-#         log_liklihood += log_p_Yt / N
-#         grad_Wy += grad_Wy_t / N
-#         grad_T += grad_Tij_t / N
-#     obj = ((norm(W)**2 + norm(T)**2) /2) - C * log_liklihood
-#     ## flatten grad_Wy and grad_T and concatenate
-#     flat_grad_Wy = []
-#     flat_grad_T = []
-#     for i in range(26) :
-#         flat_grad_Wy.append(grad_Wy[i,:])
-#         flat_grad_T.append(grad_T[:,i])
-#     grad_theta = flat_grad_Wy + flat_grad_T         ## Gradient vector
-#     return [obj, grad_theta]
+    ## Calculate gradient of whole training data
+    grad_Wy = np.zeros((26,128))
+    grad_T = np.zeros((26,26))
+    log_posterior = 0
+    for t in range(N) :
+        log_p_Yt, grad_Wy_t, grad_Tij_t = get_posterior_grad(Y[t], X[t], W, T)
+        log_posterior += log_p_Yt / N
+        grad_Wy += grad_Wy_t / N
+        grad_T += grad_Tij_t / N
+    
+    return log_posterior, grad_Wy, grad_T
 
-# def crf_test(model, word_list) :
-#     W = model[:128*26]
-#     T = model[128*26:]
-#     W = np.reshape(W, (26,128))                 ## W contains each Wy as a row of size 128
-#     T = np.reshape(T, (26,26))
-#     T = T.transpose()
-#     # N = int((word_list[-1].split())[3]) 
-#     ##### Extract Y and X from data ######
-#     ##### shape of X should be each letter in a row of size 128
-#     Y = []              ## array of all labels of all words
-#     X = []              ## array of pixel values of all words
-#     Yt = []             ## array of labels of letters for a single word
-#     Xt = []             ## array of pixel values of letters for a single word
-#     for i in range(len(word_list)) :
-#         letter = (word_list[i]).split()         ## extract data corresponding to a single letter
-#         Yt.append(ord(letter[1].lower())-97)    ## extract the label and convert it to integer
-#         Xt.append(np.array(list(map(int,letter[5:]))))      ## extract pixel values, convert them to integer 
-#                                                             ## and form a numpy array for data manipulation
-#         if (int(letter[2]) == -1) :             ## Check for end of word
-#             Y.append(Yt)
-#             X.append(np.array(Xt))
-#             Yt = []
-#             Xt = []
-#     y_predict = crf_decode(W, T, word_list)     ## Decode utility defined in 1c
+def write_grad_to_file(model,word_list) :
+    log_posterior, grad_Wy, grad_T = get_posterior_grad_forall(model,word_list)
+    ## flatten grad_Wy and grad_T and concatenate
+    flat_grad_Wy = []
+    flat_grad_T = []
+    for i in range(26) :
+        flat_grad_Wy.append(grad_Wy[i,:])
+        flat_grad_T.append(grad_T[:,i])
+    grad_theta = flat_grad_Wy + flat_grad_T         ## Gradient vector
+    ## Write gradient to file result/gradient.txt
+    np.savetxt("/Users/gammu/Documents/AML_assignment_1/uic-cs512-assignment1/result/gradient.txt", grad_theta, fmt = '%f')
 
-#     ## Calculate accuracy by comparing y_pred with true labels
-#     ##----------- TO-DO -----------##
-#     return accuracy
+def crf_obj(model,word_list,C) : 
+    log_posterior, grad_Wy, grad_T = get_posterior_grad_forall(model,word_list)
+    W,T = extract_parameters(model)
+    obj = ((norm(W)**2 + norm(T)**2) /2) - C * log_posterior        ## Objective function
+    
+    ## Calculate gradient for objective function
+    ##----------- TO-DO -----------##
+    
+    ## flatten grad_Wy and grad_T and concatenate
+    flat_grad_Wy = []
+    flat_grad_T = []
+    for i in range(26) :
+        flat_grad_Wy.append(grad_Wy[i,:])
+        flat_grad_T.append(grad_T[:,i])
+    grad_theta = flat_grad_Wy + flat_grad_T                         ## Gradient vector
+    return [obj, grad_theta]
 
-# def optimize_obj(train_data, test_data, C) :
-#     Wo = np.zeros((128*26+26**2,1))
-#     result = opt.fmin_tnc(crf_obj, Wo, args = [train_data, C], maxfun=100,
-#                           ftol=1e-3, disp=5)
-#     model = result[0]
-#     accuracy = crf_test(model, test_data)
-#     print('CRF test accuracy for c = {}: {}'.format(C,accuracy))
-#     return accuracy
+###################### Test code ######################
+
+# use check_grad to check gradient value 
+
+######################################################
+
+def crf_test(model, word_list) :
+    W,T = extract_parameters(model)
+    Y,X = extract_words(word_list)
+    
+    y_predict = []
+    for Xt in X :
+        y_predict.append(decoder(Xt, W, T))                 ## Decode utility defined in 1c
+    ## Make sure decoder returns only the y_predict and nothing else
+
+    flat_Y = [ys for Yt in Y for ys in Yt]
+    flat_y_predict = [ys for Yt in y_predict for ys in Yt]
+    
+    ## Calculate word-wise error
+    num_words = len(Y)
+    wordwise_error = 0
+    for t in range(len(Y)) :
+        err = np.count_nonzero(np.array(Y[t]) - np.array(y_predict[t]))
+        if (err != 0) :
+            wordwise_error += 1
+    wordwise_error = wordwise_error * 100 / num_words
+
+    ## Calculate letter-wise error
+    num_letters = len(flat_Y)
+    letterwise_error = np.count_nonzero(np.array(flat_Y) - np.array(flat_y_predict))
+    letterwise_error = letterwise_error * 100 / num_letters
+
+    return letterwise_error, wordwise_error, y_predict
+
+def optimize_obj(train_data, test_data, C) :
+    Wo = np.zeros((128*26+26**2,1))
+    result = opt.fmin_tnc(crf_obj, Wo, args = [train_data, C], maxfun=100,
+                          ftol=1e-3, disp=5)
+    model = result[0]
+    ## Store optimal solution W and T in result/solution.txt
+    np.savetxt("/Users/gammu/Documents/AML_assignment_1/uic-cs512-assignment1/result/solution.txt", model, fmt = '%f')
+    
+    letterwise_error, wordwise_error, y_predict = crf_test(model, test_data)
+
+    ## Store predictions for test data in result/prediction.txt
+    np.savetxt("/Users/gammu/Documents/AML_assignment_1/uic-cs512-assignment1/result/prediction.txt", y_predict, fmt = '%i')
+    
+    # print('CRF test accuracy for c = {}: {}'.format(C,accuracy))
+    # return accuracy
