@@ -93,7 +93,16 @@ def make_transformations(images_arr, transform_list, index_of_indices):
             elif transform[0] == 'r':
                 images_arr[index] = rotate_image(images_arr[index], transform[2])
     return images_arr
-    
+
+
+def write_transformed_data(path, images_arr, y_data):
+    with open(path, 'w') as f:
+        for i in range(images_arr.shape[0]):
+            str_y_data = ' '.join([str(y) for y in y_data[i]])
+            str_image = ' '.join([str(pix) for pix in images_arr[i]])
+            f.write(str_y_data + ' ' + str_image)
+            f.write('\n')
+
 
 
 if __name__ == "__main__":
@@ -107,4 +116,5 @@ if __name__ == "__main__":
     # translate_image(images_arr[0], (3,3))
     # rotate_image(images_arr[0], 180)
     print(images_arr.shape)
-    np.savetxt('../data/train_transform.txt', images_arr.flatten())
+    write_transformed_data('../data/train_transform.txt', images_arr, y_data_list)
+    # np.savetxt('../data/train_transform.txt', images_arr.flatten())
