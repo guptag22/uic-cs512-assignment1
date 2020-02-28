@@ -37,7 +37,7 @@ def decoder(X, W, T):
     l_m = []                      # ym (equation 29).
     for i in range(26):      
         l_m = np.append(l_m, [f(m-1,i) + l[m-1,i]])
-    max_m = np.amax(l_m)              # max{<Wym, xm> + lm(ym)} 
+    # max_m = np.amax(l_m)              # max{<Wym, xm> + lm(ym)} gives a value 200.18515048829295
     
     y_pred = np.zeros((m), dtype = int)
     y_pred[m-1] = np.argmax(l_m)     # ym^*
@@ -48,11 +48,11 @@ def decoder(X, W, T):
         for i in range(26):
             temp1.append(f(s, i) + g(i, y_pred[s+1]) + l[s, i])
         y_pred[s] = np.argmax(temp1)
-    return max_m, y_pred + 1;   # need to add 1 to the prediction labels so that 1 -> a, ... 26 -> z
+    return y_pred + 1   # need to add 1 to the prediction labels so that 1 -> a, ... 26 -> z
 
-print(decoder(X, W, T)[0]) # report the maximum objective function 200.18515048829298
+# print(decoder(X, W, T)[0]) # report the maximum objective function 200.18515048829298
 
-decode_output = decoder(X, W, T)[1]
+decode_output = decoder(X, W, T)
 
 np.savetxt(path + "result/decode_output.txt", decode_output, fmt = '%i')
 
