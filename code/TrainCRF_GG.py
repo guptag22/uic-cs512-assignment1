@@ -92,13 +92,13 @@ def get_log_Zx(Xt,W,b) :
     log_Zx = max_value + np.log(sum(np.exp(np.array(res) - max_value))) 
     return log_Zx
 
-def get_log_posterior_Yt(Yt,Xt,W,T) :        ## Calculate log(p(Y|X))
-    m = len(Xt)                         ## number of letters in the word
-    b = get_bwd_msg(Xt,W,T)
+def get_log_posterior_Yt(Yt,Xt,W,T) :        ## Calculate log(p(Yt|Xt))
     def f(s,y) :                        ## < Wy, Xts >
         return np.dot(W[y,:],Xt[s,:])   
     def g(i,j) :                        ## T[i,j]
         return T[i,j]                   
+    m = len(Xt)                         ## number of letters in the word
+    b = get_bwd_msg(Xt,W,T)
     log_Zx = get_log_Zx(Xt,W,b)
     log_p_Yt = (f(m-1,Yt[m-1]) - log_Zx)
     for s in range(m-1) :
@@ -182,7 +182,7 @@ def write_grad_to_file(model,word_list) :
 
 def crf_obj(model,word_list,C) : 
     log_posterior = get_log_posterior(model,word_list)
-    obj = ((model**2) /2) - (C * log_posterior)     ## Objective function 
+    obj = (np.sum(model**2) /2) - (C * log_posterior)     ## Objective function 
     return obj
 def crf_grad(model,word_list,C) :
     grad_theta = get_grad_forall(model,word_list)
