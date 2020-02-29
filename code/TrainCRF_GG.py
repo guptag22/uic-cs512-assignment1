@@ -6,17 +6,17 @@ import string
 from numpy.linalg import norm
 from decoder_WW import decoder
 
-train_data_PATH = "/Users/gammu/Documents/AML_assignment_1/uic-cs512-assignment1/data/train.txt"
+train_data_PATH = "../data/train.txt"
 file = open(train_data_PATH,"r")
 train_data = (file.read()).strip()
 train_data = train_data.split('\n')         ## Training data as a list of individual letters' data
 
-test_data_PATH = "/Users/gammu/Documents/AML_assignment_1/uic-cs512-assignment1/data/test.txt"
+test_data_PATH = "../data/test.txt"
 file = open(test_data_PATH,"r")
 test_data = (file.read()).strip()
 test_data = test_data.split('\n')           ## Test data as a list of individual letters' data
 
-model_PATH = "/Users/gammu/Documents/AML_assignment_1/uic-cs512-assignment1/data/model.txt"
+model_PATH = "../data/model.txt"
 model = np.genfromtxt(model_PATH, delimiter = ' ')
 
 def extract_words(word_list) :      ## Extract all words from the list
@@ -177,7 +177,7 @@ def write_grad_to_file(model,word_list) :
     grad_theta = get_grad_forall(model,word_list)
 
     ## Write gradient to file result/gradient.txt
-    np.savetxt("/Users/gammu/Documents/AML_assignment_1/uic-cs512-assignment1/result/gradient.txt", grad_theta, fmt = '%f')
+    np.savetxt("../result/gradient.txt", grad_theta, fmt = '%f')
 
 
 def crf_obj(model,word_list,C) : 
@@ -230,12 +230,12 @@ def optimize_obj(train_data, test_data, C) :
                           ftol=1e-3, disp=5)
     model = result[0]
     ## Store optimal solution W and T in result/solution.txt
-    np.savetxt("/Users/gammu/Documents/AML_assignment_1/uic-cs512-assignment1/result/solution.txt", model, fmt = '%f')
+    np.savetxt("../result/solution.txt", model, fmt = '%f')
     
     letterwise_error, wordwise_error, y_predict = crf_test(model, test_data)
 
     ## Store predictions for test data in result/prediction.txt
-    np.savetxt("/Users/gammu/Documents/AML_assignment_1/uic-cs512-assignment1/result/prediction.txt", y_predict, fmt = '%i')
+    np.savetxt("../result/prediction.txt", y_predict, fmt = '%i')
     
     # print('CRF test accuracy for c = {}: {}'.format(C,accuracy))
     return letterwise_error, wordwise_error
