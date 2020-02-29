@@ -4,6 +4,7 @@ import numpy as np
 import scipy.optimize as opt
 import string
 from numpy.linalg import norm
+from decoder_WW import decoder
 
 train_data_PATH = "/Users/gammu/Documents/AML_assignment_1/uic-cs512-assignment1/data/train.txt"
 file = open(train_data_PATH,"r")
@@ -44,10 +45,8 @@ def extract_parameters(model) :     ## Extract W and T from the model
     T = T.transpose()
     return W,T
 
-def get_posterior_grad(Yt,Xt,W,T) :         ## get log(p(Yt|Xt)) and gradients for one training example
-    m = len(Yt)                         ## number of letters in the word
-
-    a = np.zeros((m,26))                ## message forward
+def get_bwd_msg(Xt,W,T) :
+    m = len(Xt)                         ## number of letters in the word
     b = np.zeros((m,26))                ## message backwards
     
     def f(s,y) :                        ## < Wy, Xts >
@@ -63,6 +62,16 @@ def get_posterior_grad(Yt,Xt,W,T) :         ## get log(p(Yt|Xt)) and gradients f
             max_value = max(res)
             res = max_value + np.log(sum(np.exp(np.array(res) - max_value)))
             b[s,j] = res
+    return b
+
+def get_fwd_msg(Xt,W,T) :
+    m = len(Xt)                         ## number of letters in the word
+    a = np.zeros((m,26))                ## message forward
+    
+    def f(s,y) :                        ## < Wy, Xts >
+        return np.dot(W[y,:],Xt[s,:])   
+    def g(i,j) :                        ## T[i,j]
+        return T[i,j]                   
 
     for s in range(1,m,1) :             ## Calculate forward messages a
         for j in range(26) :
@@ -72,102 +81,114 @@ def get_posterior_grad(Yt,Xt,W,T) :         ## get log(p(Yt|Xt)) and gradients f
             max_value = max(res)
             res = max_value + np.log(sum(np.exp(np.array(res) - max_value)))
             a[s,j] = res
-            
+    return a
+
+def get_log_Zx(Xt,W,b) :
     log_Zx = 0                                      ## Zx sum over all yi for given training example
     res = []
     for i in range(26) :
-        res.append(f(0,i) + b[0,i])   
+        res.append(np.dot(W[i,:],Xt[0,:]) + b[0,i])   
     max_value = max(res)
-    res = max_value + np.log(sum(np.exp(np.array(res) - max_value)))
-    log_Zx = res       
+    log_Zx = max_value + np.log(np.sum(np.exp(np.array(res) - max_value))) 
+    return log_Zx
 
+def get_log_posterior_Yt(Yt,Xt,W,T) :        ## Calculate log(p(Yt|Xt))
+    def f(s,y) :                        ## < Wy, Xts >
+        return np.dot(W[y,:],Xt[s,:])   
+    def g(i,j) :                        ## T[i,j]
+        return T[i,j]                   
+    m = len(Xt)                         ## number of letters in the word
+    b = get_bwd_msg(Xt,W,T)
+    log_Zx = get_log_Zx(Xt,W,b)
+    log_p_Yt = (f(m-1,Yt[m-1]) - log_Zx)
+    for s in range(m-1) :
+        log_p_Yt += f(s,Yt[s]) + g(Yt[s-1],Yt[s])   ## log(p(Yt|Xt)) = sum_s (f_s(y_s)) + sum_s(g(y_s-1,y_s) - log(Zx))
+    return log_p_Yt
+
+def get_grad_t(Yt,Xt,W,T) :             ## get log(p(Yt|Xt)) and gradients for one training example
+    m = len(Xt)                         ## number of letters in the word
+    a = get_fwd_msg(Xt,W,T)
+    b = get_bwd_msg(Xt,W,T)
+    log_Zx = get_log_Zx(Xt,W,b)
+    
+    def f(s,y) :                        ## < Wy, Xts >
+        return np.dot(W[y,:],Xt[s,:])   
+    def g(i,j) :                        ## T[i,j]
+        return T[i,j]                   
     ## Calculate marginals
     def marginal_ys(s,ys) :
         return (np.exp(f(s,ys) + a[s,ys] + b[s,ys] - log_Zx))
     def marginal_ys_ys1(s,ys,ys1) :
         return (np.exp(f(s,ys) + f(s+1,ys1) + g(ys,ys1) + a[s,ys] + b[s+1,ys1] - log_Zx))
 
-    ## Calculate log(p(Y|X))
-    log_p_Yt = (f(m-1,Yt[m-1]) - log_Zx)
-    for s in range(m-1) :
-        log_p_Yt += f(s,Yt[s]) + g(Yt[s-1],Yt[s])   ## log(p(Yt|Xt)) = sum_s (f_s(y_s)) + sum_s(g(y_s-1,y_s) - log(Zx))
-
-    ## Calculate Gradient wrt Wy of log(p(Y|X))
-    grad_Wy_t = np.empty((26,128))
+    ## Calculate Gradient wrt Wy of log(p(Y|X)) and collect them together
+    grad_W_t = np.empty((26,128))
     for i in range(26) :
-        res = 0
+        res = np.zeros(128)
         for s in range(m) :
             ind = 1 if Yt[s] == i else 0
             res += (ind - marginal_ys(s,i)) * Xt[s,:]
-        grad_Wy_t[i,:] = res
+        grad_W_t[i,:] = res
 
     ## Calculate Gradient wrt Tij of log(p(Y|X))
-    grad_Tij_t = np.empty((26,26))
+    grad_T_t = np.empty((26,26))
     for i in range(26) :
         for j in range(26) :
             res = 0
             for s in range(m-1) :
                 ind = 1 if (Yt[s] == i and Yt[s+1] == j) else 0
                 res += ind - marginal_ys_ys1(s,Yt[s],Yt[s+1])
-            grad_Tij_t[i,j] = res
+            grad_T_t[i,j] = res
     
-    return log_p_Yt, grad_Wy_t, grad_Tij_t
+    ## flatten grad_W_t and grad_T_t and concatenate
+    flat_grad_W_t = grad_W_t.flatten()
+    flat_grad_T_t = grad_T_t.flatten('F')
+    grad_theta_t = np.concatenate((flat_grad_W_t, flat_grad_T_t))                   ## Gradient vector
+    
+    return grad_theta_t
+
 
 ###################### Test code ######################
-# word_list = train_data[:24]
-# W,T = extract_parameters(model)
-# Y,X = extract_words(word_list)
-# N = len(Y)                              ## Total number of words in the training data
-# log_p_Y1, grad_Wy_1, grad_Tij_1 = get_posterior_grad(Y[-1],X[-1],W,T)
-# print(log_p_Y1, grad_Wy_1, grad_Tij_1)
 
 ######################################################
 
-def get_posterior_grad_forall(model,word_list) :
+def get_log_posterior(model,word_list) :
     W,T = extract_parameters(model)
     Y,X = extract_words(word_list)
     N = len(Y)                              ## Total number of words in the training data
-    
-    ## Calculate gradient of whole training data
-    grad_Wy = np.zeros((26,128))
-    grad_T = np.zeros((26,26))
     log_posterior = 0
     for t in range(N) :
-        log_p_Yt, grad_Wy_t, grad_Tij_t = get_posterior_grad(Y[t], X[t], W, T)
+        log_p_Yt = get_log_posterior_Yt(Y[t],X[t],W,T)
         log_posterior += log_p_Yt / N
-        grad_Wy += grad_Wy_t / N
-        grad_T += grad_Tij_t / N
-    
-    return log_posterior, grad_Wy, grad_T
+    return log_posterior
+
+def get_grad_forall(model,word_list) :
+    W,T = extract_parameters(model)
+    Y,X = extract_words(word_list)
+    N = len(Y)                              ## Total number of words in the training data
+    ## Calculate gradient of whole training data
+    grad_theta = np.zeros(26*128 + 26*26)
+    for t in range(N) :
+        grad_theta_t = get_grad_t(Y[t], X[t], W, T)
+        grad_theta += grad_theta_t / N
+    return grad_theta
 
 def write_grad_to_file(model,word_list) :
-    log_posterior, grad_Wy, grad_T = get_posterior_grad_forall(model,word_list)
-    ## flatten grad_Wy and grad_T and concatenate
-    flat_grad_Wy = []
-    flat_grad_T = []
-    for i in range(26) :
-        flat_grad_Wy.append(grad_Wy[i,:])
-        flat_grad_T.append(grad_T[:,i])
-    grad_theta = flat_grad_Wy + flat_grad_T         ## Gradient vector
+    grad_theta = get_grad_forall(model,word_list)
+
     ## Write gradient to file result/gradient.txt
     np.savetxt("/Users/gammu/Documents/AML_assignment_1/uic-cs512-assignment1/result/gradient.txt", grad_theta, fmt = '%f')
 
+
 def crf_obj(model,word_list,C) : 
-    log_posterior, grad_Wy, grad_T = get_posterior_grad_forall(model,word_list)
-    W,T = extract_parameters(model)
-    obj = ((norm(W)**2 + norm(T)**2) /2) - C * log_posterior        ## Objective function
-    
-    ## Calculate gradient for objective function
-    ##----------- TO-DO -----------##
-    
-    ## flatten grad_Wy and grad_T and concatenate
-    flat_grad_Wy = []
-    flat_grad_T = []
-    for i in range(26) :
-        flat_grad_Wy.append(grad_Wy[i,:])
-        flat_grad_T.append(grad_T[:,i])
-    grad_theta = flat_grad_Wy + flat_grad_T                         ## Gradient vector
-    return [obj, grad_theta]
+    log_posterior = get_log_posterior(model,word_list)
+    obj = (np.sum(model**2) /2) - (C * log_posterior)     ## Objective function 
+    return obj
+def crf_grad(model,word_list,C) :
+    grad_theta = get_grad_forall(model,word_list)
+    grad_theta = model - (C * grad_theta)           ## Gradient for objective function
+    return grad_theta
+
 
 ###################### Test code ######################
 
@@ -217,4 +238,4 @@ def optimize_obj(train_data, test_data, C) :
     np.savetxt("/Users/gammu/Documents/AML_assignment_1/uic-cs512-assignment1/result/prediction.txt", y_predict, fmt = '%i')
     
     # print('CRF test accuracy for c = {}: {}'.format(C,accuracy))
-    # return accuracy
+    return letterwise_error, wordwise_error
