@@ -89,7 +89,7 @@ def get_log_Zx(Xt,W,b) :
     for i in range(26) :
         res.append(np.dot(W[i,:],Xt[0,:]) + b[0,i])   
     max_value = max(res)
-    log_Zx = max_value + np.log(sum(np.exp(np.array(res) - max_value))) 
+    log_Zx = max_value + np.log(np.sum(np.exp(np.array(res) - max_value))) 
     return log_Zx
 
 def get_log_posterior_Yt(Yt,Xt,W,T) :        ## Calculate log(p(Yt|Xt))
@@ -141,8 +141,8 @@ def get_grad_t(Yt,Xt,W,T) :             ## get log(p(Yt|Xt)) and gradients for o
             grad_T_t[i,j] = res
     
     ## flatten grad_W_t and grad_T_t and concatenate
-    flat_grad_W_t = [grad_W_t[i,j] for i in range(26) for j in range(128)]          ## Collect Wy row wise
-    flat_grad_T_t = [grad_T_t[j,i] for i in range(26) for j in range(26)]           ## Collect Tij column wise
+    flat_grad_W_t = grad_W_t.flatten()
+    flat_grad_T_t = grad_T_t.flatten('F')
     grad_theta_t = np.concatenate((flat_grad_W_t, flat_grad_T_t))                   ## Gradient vector
     
     return grad_theta_t
@@ -238,4 +238,4 @@ def optimize_obj(train_data, test_data, C) :
     np.savetxt("/Users/gammu/Documents/AML_assignment_1/uic-cs512-assignment1/result/prediction.txt", y_predict, fmt = '%i')
     
     # print('CRF test accuracy for c = {}: {}'.format(C,accuracy))
-    # return accuracy
+    return letterwise_error, wordwise_error
