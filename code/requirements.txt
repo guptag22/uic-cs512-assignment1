@@ -1,0 +1,4 @@
+certifi==2019.11.28
+numpy==1.18.1
+opencv-python==4.2.0.32
+scipy==1.4.1
