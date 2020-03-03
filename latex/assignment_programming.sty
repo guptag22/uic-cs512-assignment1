@@ -44,37 +44,42 @@
 
 \usepackage[citecolor=blue, linkcolor=blue,colorlinks]{hyperref}
 
-\def\stuinfo#1#2{\def\@stuname{#1}\def\@stuemail{#2}}
+%\def\stuinfo#1#2{\def\@stuname{#1}\def\@stuemail{#2}}
 
-\def\lecturenumber#1{\def\@lecturenumber{#1}}
+%\def\lecturenumber#1{\def\@lecturenumber{#1}}
 % \@lecturenumber intentionally undefined
 
-\def\duedate#1{\def\@duedate{#1}}
+%\def\duedate#1{\def\@duedate{#1}}
 % \@lecturedata intentionally undefined
 
-\def\xxx{\vphantom{()}}
-\def\maketitle
-{
-\def\@oddhead{\underline{\hbox to\textwidth{\textbf{%
-    \rlap{CS 512\phantom{()}}\hfil
-    Assignment 1: Graphical Models (Programming Questions)
-    \hfil\llap{Spring 2020}}}}}
-\def\@oddfoot{\hfil\thepage\hfil}
-\def\ps@myfirst{\ps@plain\def\@oddfoot{\hfil\thepage\hfil}}
-\thispagestyle{myfirst}
-\noindent
-\framebox[\textwidth]{\vbox to 0.75in{
-\hbox to\textwidth{~\textbf{\rlap{CS 512: Advanced Machine Learning\xxx}
-    \hfil\llap{Due: \@duedate}}~}
-\vss
-\hbox to \textwidth{\Large\hfill Assignment 1: Graphical Models (Programming Questions)   ~\hfill}
-\vss
-\hbox to \textwidth{~\textsl{\rlap{Student: \@stuname\xxx}
-    \hfill\llap{Email: \@stuemail}}~}
-}}
-%\setcounter{chapter}{\@lecturenumber}
-\bigskip
-}
+%\def\xxx{\vphantom{()}}
+%\def\maketitle
+% {
+% \def\@oddhead{\underline{\hbox to\textwidth{\textbf{%
+%     \rlap{CS 512\phantom{()}}\hfil
+%     Assignment 1: Graphical Models (Programming Questions)
+%     \hfil\llap{Spring 2020}}}}}
+% \def\@oddfoot{\hfil\thepage\hfil}
+% \def\ps@myfirst{\ps@plain\def\@oddfoot{\hfil\thepage\hfil}}
+% \thispagestyle{myfirst}
+% \noindent
+% \framebox[\textwidth]{\vbox to 0.75in{
+% \hbox to\textwidth{~\textbf{\rlap{CS 512: Advanced Machine Learning\xxx}
+%     \hfil\llap{Due: \@duedate}}~}
+% \vss
+% \hbox to \textwidth{\Large\hfill Assignment 1: Graphical Models (Programming Questions)   ~\hfill}
+% %\vss
+% %\hbox to \textwidth{~\textsl{\rlap{Student: \@stuname\xxx}
+%  %   \hfill\llap{Email: \@stuemail}}~}
+% \vss
+% \author{Author A}
+% \author{Author B}
+% \author{Author C}
+% \author{Author D}
+% }}
+% %\setcounter{chapter}{\@lecturenumber}
+% \bigskip
+%}
 
 %\newtheorem{theorem}{Theorem}
 

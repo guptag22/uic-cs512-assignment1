@@ -3,7 +3,7 @@ import scipy.optimize as opt
 import string
 import math
 
-path = "/Users/wangfei/Documents/Courses/CS/CS512/HW/HW1/Assignment_1_Programming/"
+path = "../"
 
 decode_input = np.genfromtxt(path + "data/decode_input.txt", delimiter = ' ')
 
@@ -38,6 +38,7 @@ def decoder(X, W, T):
     for i in range(26):      
         l_m = np.append(l_m, [f(m-1,i) + l[m-1,i]])
     # max_m = np.amax(l_m)              # max{<Wym, xm> + lm(ym)} gives a value 200.18515048829295
+    print(np.amax(l_m))
     
     y_pred = np.zeros((m), dtype = int)
     y_pred[m-1] = np.argmax(l_m)     # ym^*
